@@ -1,0 +1,29 @@
+name: Fetch OSM building data
+
+# 手動觸發：Actions 頁面 → Fetch OSM building data → Run workflow
+# 執行器可自由連線 Overpass API，抓取真實建築資料後 commit 回 repo，
+# 並自動觸發 Pages 重新部署（deploy.yml 監聽 push）。
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch and compact OSM buildings
+        run: node scripts/fetch-osm.mjs
+      - name: Commit data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/data/osm-buildings.json
+          git diff --cached --quiet && echo "資料無變化" && exit 0
+          git commit -m "更新 OSM 真實建築資料（Overpass 快照）"
+          git push

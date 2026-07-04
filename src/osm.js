@@ -31,7 +31,30 @@ function mulberry32(seed) {
   };
 }
 
+// 內建資料：由 GitHub Actions 預先抓取並烘入網站的壓縮建築資料
+// 格式：每列 [高度, 分區索引, x1, z1, x2, z2, ...]（座標為公尺整數）
+export async function loadBundledBuildings() {
+  const res = await fetch("./data/osm-buildings.json");
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const type = res.headers.get("content-type") || "";
+  if (!type.includes("json")) throw new Error("無內建資料");
+  const rows = await res.json();
+  const rng = mulberry32(42);
+  return rows.map((r) => {
+    const ring = [];
+    for (let i = 2; i < r.length; i += 2) ring.push([r[i], r[i + 1]]);
+    return { h: r[0], zone: r[1], ring, jitter: 0.72 + rng() * 0.56 };
+  });
+}
+
 export async function loadOSMBuildings(onProgress) {
+  // 優先使用烘入網站的內建資料（免下載、免外部連線）
+  try {
+    onProgress?.("讀取內建 OSM 建築資料…");
+    const list = await loadBundledBuildings();
+    if (list.length > 0) return list;
+  } catch { /* 無內建資料，改連 Overpass */ }
+
   const [s, w, n, e] = OSM_BBOX;
   const query =
     `[out:json][timeout:120][maxsize:536870912];` +
@@ -58,7 +81,7 @@ export async function loadOSMBuildings(onProgress) {
   throw new Error(`Overpass API 無法連線：${lastErr?.message || "未知錯誤"}`);
 }
 
-function parseElements(elements) {
+export function parseElements(elements) {
   const zoneRings = ZONES.map((z) => projectRing(z.ring));
   const rng = mulberry32(42);
   const out = [];

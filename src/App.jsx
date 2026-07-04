@@ -263,8 +263,9 @@ export default function App() {
             {osmLoading ? "載入中…" : "載入 OSM 真實建築足跡"}
           </button>
           <div className="desc">
-            從 OpenStreetMap（Overpass API）抓取士林北投一帶的真實建築輪廓與高度，
-            取代程序化生成的建築。資料量較大，載入約需 30 秒至數分鐘。
+            載入士林北投一帶的 OSM 真實建築輪廓與高度，取代程序化生成的建築。
+            若網站已烘入預抓資料（GitHub Actions「Fetch OSM building data」）則秒開；
+            否則即時向 Overpass API 抓取，約需 30 秒至數分鐘。
           </div>
           {osmStatus && (
             <div className={`status ${osmStatus.includes("失敗") ? "err" : osmStatus.includes("✓") ? "ok" : "run"}`}>
