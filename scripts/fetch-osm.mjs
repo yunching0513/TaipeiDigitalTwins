@@ -7,29 +7,48 @@ import { parseElements } from "../src/osm.js";
 const OVERPASS_ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter",
+  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
 ];
+
+const USER_AGENT =
+  "TaipeiDigitalTwins/1.0 (+https://github.com/yunching0513/TaipeiDigitalTwins; urban digital twin research)";
 
 const [s, w, n, e] = OSM_BBOX;
 const query =
   `[out:json][timeout:180][maxsize:1073741824];` +
   `(way["building"](${s},${w},${n},${e}););out geom 80000;`;
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 let data = null;
 let lastErr = null;
-for (const endpoint of OVERPASS_ENDPOINTS) {
-  try {
-    console.log(`查詢 ${endpoint} …`);
-    const res = await fetch(endpoint, {
-      method: "POST",
-      body: "data=" + encodeURIComponent(query),
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    data = await res.json();
-    break;
-  } catch (err) {
-    console.warn(`${endpoint} 失敗：${err.message}`);
-    lastErr = err;
+outer:
+for (let attempt = 1; attempt <= 3; attempt++) {
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    try {
+      console.log(`[第${attempt}回] 查詢 ${endpoint} …`);
+      const res = await fetch(endpoint, {
+        method: "POST",
+        body: "data=" + encodeURIComponent(query),
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": USER_AGENT,
+          "Accept": "application/json",
+        },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      data = await res.json();
+      break outer;
+    } catch (err) {
+      console.warn(`${endpoint} 失敗：${err.message}`);
+      lastErr = err;
+      await sleep(3000);
+    }
+  }
+  if (attempt < 3) {
+    console.log("本回全部失敗，等待 30 秒後重試…");
+    await sleep(30000);
   }
 }
 if (!data) {
