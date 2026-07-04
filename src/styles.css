@@ -1,0 +1,100 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root { height: 100%; }
+
+body {
+  background: #0f1420;
+  color: #edeae2;
+  font-family: "Noto Sans TC", "IBM Plex Sans", sans-serif;
+  overflow: hidden;
+}
+
+.mono { font-family: "IBM Plex Mono", monospace; }
+
+.app { display: flex; height: 100vh; }
+
+.canvas-wrap { flex: 1; position: relative; min-width: 0; }
+.canvas-wrap canvas { display: block; }
+
+.hud {
+  position: absolute; top: 14px; left: 16px; pointer-events: none;
+  text-shadow: 0 1px 6px rgba(0,0,0,.8);
+}
+.hud .kicker { font-size: 11px; color: #4fa3c7; letter-spacing: 2px; font-family: "IBM Plex Mono", monospace; }
+.hud h1 { font-family: "Noto Serif TC", serif; font-size: 22px; font-weight: 700; margin: 2px 0; }
+.hud .sub { font-size: 11.5px; color: #8a93ab; }
+
+.hud-year {
+  position: absolute; top: 14px; right: 16px; text-align: right; pointer-events: none;
+  font-family: "IBM Plex Mono", monospace; text-shadow: 0 1px 6px rgba(0,0,0,.8);
+}
+.hud-year .y { font-size: 30px; color: #4fa3c7; font-weight: 500; }
+.hud-year .b { font-size: 11px; color: #8a93ab; }
+
+.hud-hint {
+  position: absolute; bottom: 12px; left: 16px; font-size: 11px; color: #5a6480;
+  pointer-events: none; text-shadow: 0 1px 6px rgba(0,0,0,.8);
+}
+
+.legend {
+  position: absolute; bottom: 12px; right: 16px; width: 240px; pointer-events: none;
+  background: rgba(15,20,32,.72); border: 1px solid #2a3450; border-radius: 8px; padding: 8px 10px;
+}
+.legend .bar { height: 8px; border-radius: 4px; background: linear-gradient(90deg, rgb(214,74,60), rgb(232,163,61), rgb(79,163,199)); }
+.legend .row { display: flex; justify-content: space-between; font-size: 10.5px; color: #8a93ab; margin-top: 4px; }
+
+.panel {
+  width: 380px; flex-shrink: 0; height: 100vh; overflow-y: auto;
+  background: #131a2c; border-left: 1px solid #2a3450; padding: 16px 16px 40px;
+}
+.panel::-webkit-scrollbar { width: 8px; }
+.panel::-webkit-scrollbar-thumb { background: #2a3450; border-radius: 4px; }
+
+.sec { margin-bottom: 18px; }
+.sec-title { font-size: 13px; font-weight: 700; color: #e8a33d; margin-bottom: 8px; }
+
+.btn {
+  border: 1px solid #3a4560; background: #161d30; color: #edeae2;
+  border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer;
+  font-family: inherit;
+}
+.btn:hover { border-color: #4fa3c7; }
+.btn.on { background: #4fa3c7; color: #0f1420; border-color: #4fa3c7; font-weight: 700; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.danger { border-color: #d64a3c; color: #d64a3c; }
+.btn.big { padding: 9px 18px; font-size: 13px; }
+.btn:focus-visible { outline: 2px solid #e8a33d; outline-offset: 2px; }
+
+.btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.desc { font-size: 12px; color: #8a93ab; margin-top: 6px; line-height: 1.5; }
+
+.field { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+.field input, .field select {
+  flex: 1; background: #0f1420; border: 1px solid #3a4560; color: #edeae2;
+  border-radius: 6px; padding: 6px 8px; font-size: 12px; font-family: inherit;
+}
+
+.radio-row { display: flex; gap: 12px; font-size: 12.5px; margin-top: 4px; }
+.radio-row label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+
+.card { background: #0f1522; border: 1px solid #2a3450; border-radius: 10px; padding: 12px 14px; }
+
+.kv { display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px dashed #2a3450; }
+.kv:last-child { border-bottom: none; }
+.kv .k { color: #8a93ab; }
+
+.log-entry { border-left: 2px solid #4fa3c7; padding-left: 12px; margin-bottom: 14px; }
+.log-entry .r { font-size: 11px; color: #4fa3c7; font-family: "IBM Plex Mono", monospace; }
+.log-entry .n { font-size: 12.5px; margin: 3px 0; line-height: 1.5; }
+.log-entry .e { font-size: 11.5px; color: #e8a33d; line-height: 1.6; }
+
+.status { font-size: 12px; margin-top: 8px; }
+.status.run { color: #e8a33d; animation: pulse 1.2s infinite; }
+.status.err { color: #d64a3c; }
+.status.ok { color: #6fc7a3; }
+
+.footer { font-size: 11px; color: #5a6480; line-height: 1.6; border-top: 1px solid #2a3450; padding-top: 12px; }
+
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
