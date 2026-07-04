@@ -34,11 +34,16 @@ function mulberry32(seed) {
 // 內建資料：由 GitHub Actions 預先抓取並烘入網站的壓縮建築資料
 // 格式：每列 [高度, 分區索引, x1, z1, x2, z2, ...]（座標為公尺整數）
 export async function loadBundledBuildings() {
-  const res = await fetch("./data/osm-buildings.json");
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const type = res.headers.get("content-type") || "";
-  if (!type.includes("json")) throw new Error("無內建資料");
-  const rows = await res.json();
+  let rows;
+  if (typeof window !== "undefined" && window.__OSM_DATA__) {
+    rows = window.__OSM_DATA__; // 單檔發佈（如 Artifact）直接內嵌的資料
+  } else {
+    const res = await fetch("./data/osm-buildings.json");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const type = res.headers.get("content-type") || "";
+    if (!type.includes("json")) throw new Error("無內建資料");
+    rows = await res.json();
+  }
   const rng = mulberry32(42);
   return rows.map((r) => {
     const ring = [];
