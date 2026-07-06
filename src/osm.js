@@ -31,19 +31,25 @@ function mulberry32(seed) {
   };
 }
 
-// 內建資料：由 GitHub Actions 預先抓取並烘入網站的壓縮建築資料
-// 格式：每列 [高度, 分區索引, x1, z1, x2, z2, ...]（座標為公尺整數）
+// 內建資料：由 GitHub Actions 預先抓取並烘入網站的壓縮資料。
+// 單檔發佈（如 Artifact）時可改以 window 全域變數內嵌。
+async function loadLayer(file, globalKey) {
+  if (typeof window !== "undefined" && window[globalKey]) return window[globalKey];
+  const res = await fetch(file);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const type = res.headers.get("content-type") || "";
+  if (!type.includes("json")) throw new Error("無內建資料");
+  return res.json();
+}
+
+// 路網：每列 [等級0-4, x1, z1, x2, z2, ...]
+export const loadBundledRoads = () => loadLayer("./data/osm-roads.json", "__OSM_ROADS__");
+// 土地使用：每列 [類型 0=綠地 1=農地 2=水域 3=工業, x1, z1, ...]（閉合環）
+export const loadBundledLanduse = () => loadLayer("./data/osm-landuse.json", "__OSM_LANDUSE__");
+
+// 建築：每列 [高度, 分區索引, x1, z1, x2, z2, ...]（座標為公尺整數）
 export async function loadBundledBuildings() {
-  let rows;
-  if (typeof window !== "undefined" && window.__OSM_DATA__) {
-    rows = window.__OSM_DATA__; // 單檔發佈（如 Artifact）直接內嵌的資料
-  } else {
-    const res = await fetch("./data/osm-buildings.json");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const type = res.headers.get("content-type") || "";
-    if (!type.includes("json")) throw new Error("無內建資料");
-    rows = await res.json();
-  }
+  const rows = await loadLayer("./data/osm-buildings.json", "__OSM_DATA__");
   const rng = mulberry32(42);
   return rows.map((r) => {
     const ring = [];

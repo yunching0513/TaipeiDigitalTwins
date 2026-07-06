@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { TwinScene } from "./scene.js";
 import { simulateRound } from "./sim.js";
-import { loadOSMBuildings } from "./osm.js";
+import { loadOSMBuildings, loadBundledRoads, loadBundledLanduse } from "./osm.js";
 import { ZONES } from "./geo.js";
 import {
   INIT_STATE, METRICS, SCENARIOS, ROUNDS, YEAR_STEP,
@@ -94,7 +94,21 @@ export default function App() {
       await new Promise((r) => setTimeout(r, 30)); // 讓狀態先渲染
       sceneRef.current?.setOSMBuildings(list);
       setBuildingCount(list.length);
-      setOsmStatus(`已載入 ${list.length.toLocaleString()} 棟 OSM 真實建築 ✓`);
+
+      // 真實路網與土地使用（若網站已烘入資料）
+      let extras = "";
+      try {
+        const roads = await loadBundledRoads();
+        sceneRef.current?.setRealRoads(roads);
+        extras += `、${roads.length.toLocaleString()} 條路段`;
+      } catch { /* 無路網資料 */ }
+      try {
+        const landuse = await loadBundledLanduse();
+        sceneRef.current?.setLanduse(landuse);
+        extras += `、${landuse.length.toLocaleString()} 塊土地使用`;
+      } catch { /* 無土地使用資料 */ }
+
+      setOsmStatus(`已載入 ${list.length.toLocaleString()} 棟真實建築${extras} ✓`);
     } catch (e) {
       setOsmStatus(`載入失敗：${e.message}`);
     }
@@ -260,12 +274,13 @@ export default function App() {
         <div className="sec">
           <div className="sec-title">五、真實建築資料</div>
           <button className="btn" disabled={osmLoading} onClick={loadOSM}>
-            {osmLoading ? "載入中…" : "載入 OSM 真實建築足跡"}
+            {osmLoading ? "載入中…" : "載入 OSM 真實城市資料"}
           </button>
           <div className="desc">
-            載入士林北投一帶的 OSM 真實建築輪廓與高度，取代程序化生成的建築。
+            載入士林北投一帶的 OSM 真實資料：建築輪廓與高度、分級路網
+            （快速道路→巷弄）、土地使用（綠地／農地／水域／工業區）。
             若網站已烘入預抓資料（GitHub Actions「Fetch OSM building data」）則秒開；
-            否則即時向 Overpass API 抓取，約需 30 秒至數分鐘。
+            否則即時向 Overpass API 抓取建築（路網與土地使用僅來自預抓資料）。
           </div>
           {osmStatus && (
             <div className={`status ${osmStatus.includes("失敗") ? "err" : osmStatus.includes("✓") ? "ok" : "run"}`}>

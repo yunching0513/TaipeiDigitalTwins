@@ -137,7 +137,121 @@ export class TwinScene {
       color: 0x2e86ab, transparent: true, opacity: 0.32,
       blending: THREE.AdditiveBlending, depthWrite: false,
     });
-    this.scene.add(new THREE.LineSegments(geo, mat));
+    this.procRoads = new THREE.LineSegments(geo, mat);
+    this.scene.add(this.procRoads);
+  }
+
+  // ---------- OSM 真實路網／土地使用 ----------
+
+  // rows: [等級0-4, x1, z1, x2, z2, ...]
+  setRealRoads(rows) {
+    if (this.realRoadsGroup) {
+      this.scene.remove(this.realRoadsGroup);
+    }
+    if (this.procRoads) this.procRoads.visible = false;
+
+    const group = new THREE.Group();
+    // 主要道路（0-3級）：依等級寬度的發光帶
+    const widths = [26, 18, 12, 8];
+    const opacities = [0.5, 0.42, 0.34, 0.26];
+    for (let cls = 0; cls <= 3; cls++) {
+      const positions = [];
+      const index = [];
+      for (const row of rows) {
+        if (row[0] !== cls) continue;
+        const pts = [];
+        for (let i = 1; i < row.length; i += 2) pts.push([row[i], row[i + 1]]);
+        this._appendRibbon(positions, index, pts, widths[cls]);
+      }
+      if (!positions.length) continue;
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      geo.setIndex(index);
+      const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+        color: 0x3f9dc9, transparent: true, opacity: opacities[cls],
+        blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+      }));
+      mesh.position.y = 1.6;
+      group.add(mesh);
+    }
+    // 巷弄（4級）：細線
+    {
+      const positions = [];
+      for (const row of rows) {
+        if (row[0] !== 4) continue;
+        for (let i = 1; i < row.length - 2; i += 2) {
+          positions.push(row[i], 1.4, row[i + 1], row[i + 2], 1.4, row[i + 3]);
+        }
+      }
+      if (positions.length) {
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        group.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
+          color: 0x2e86ab, transparent: true, opacity: 0.2,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        })));
+      }
+    }
+    this.scene.add(group);
+    this.realRoadsGroup = group;
+  }
+
+  _appendRibbon(positions, index, pts, width) {
+    const half = width / 2;
+    const base = positions.length / 3;
+    for (let i = 0; i < pts.length; i++) {
+      const [x, z] = pts[i];
+      const [px, pz] = pts[Math.max(0, i - 1)];
+      const [nx, nz] = pts[Math.min(pts.length - 1, i + 1)];
+      let dx = nx - px, dz = nz - pz;
+      const len = Math.hypot(dx, dz) || 1;
+      dx /= len; dz /= len;
+      const ox = -dz * half, oz = dx * half;
+      positions.push(x + ox, 0, z + oz, x - ox, 0, z - oz);
+      if (i > 0) {
+        const a = base + (i - 1) * 2;
+        index.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+      }
+    }
+  }
+
+  // rows: [類型 0=綠地 1=農地 2=水域 3=工業, x1, z1, ...]（閉合環）
+  setLanduse(rows) {
+    if (this.landuseGroup) this.scene.remove(this.landuseGroup);
+    const COLORS = [0x16351f, 0x2a331c, 0x0f3450, 0x2a2140];
+    const group = new THREE.Group();
+    const buckets = [[], [], [], []]; // positions per type
+    const indices = [[], [], [], []];
+
+    for (const row of rows) {
+      const type = row[0];
+      const ring = [];
+      for (let i = 1; i < row.length; i += 2) ring.push([row[i], row[i + 1]]);
+      if (ring.length < 3) continue;
+      const pts2 = ring.map(([x, z]) => new THREE.Vector2(x, -z));
+      let tris;
+      try { tris = THREE.ShapeUtils.triangulateShape(pts2, []); } catch { continue; }
+      const positions = buckets[type];
+      const index = indices[type];
+      const base = positions.length / 3;
+      for (const [x, z] of ring) positions.push(x, 0, z);
+      for (const t of tris) index.push(base + t[0], base + t[2], base + t[1]);
+    }
+
+    for (let type = 0; type < 4; type++) {
+      if (!buckets[type].length) continue;
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.Float32BufferAttribute(buckets[type], 3));
+      geo.setIndex(indices[type]);
+      const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+        color: COLORS[type], transparent: true, opacity: 0.85,
+        depthWrite: false, side: THREE.DoubleSide,
+      }));
+      mesh.position.y = 0.35;
+      group.add(mesh);
+    }
+    this.scene.add(group);
+    this.landuseGroup = group;
   }
 
   _buildZones() {
