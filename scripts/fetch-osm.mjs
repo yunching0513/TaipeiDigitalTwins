@@ -32,6 +32,7 @@ async function fetchOverpass(label, query) {
             "User-Agent": USER_AGENT,
             "Accept": "application/json",
           },
+          signal: AbortSignal.timeout(240000), // 掛住的端點 4 分鐘後放棄
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
