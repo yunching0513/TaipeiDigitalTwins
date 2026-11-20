@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, claude/taipei-digital-twin-0fvetn]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
