@@ -1,8 +1,19 @@
 name: Deploy to GitHub Pages
 
+# 這個 repo 的 GitHub Pages 目前沒有啟用（has_pages=false），所以 deploy job 一定會
+# 失敗於 404「Ensure GitHub Pages has been enabled」。上次成功部署是 2026-07-06，
+# 之後 Pages 被關掉，七月到十一月之間沒有任何推送所以沒人發現。
+#
+# 2026-11-20 移掉 push 觸發：留著只會讓每一次推 main 都紅一次，而這個專案沒有
+# 正式的線上部署。build job（npm ci → npm run build）本身是好的，沒有動。
+#
+# 要恢復自動部署：先到 Settings → Pages 把 Source 設成「GitHub Actions」，
+# 然後把 push 觸發加回來：
+#     on:
+#       push:
+#         branches: [main]
+#       workflow_dispatch:
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
